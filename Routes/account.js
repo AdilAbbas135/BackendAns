@@ -74,71 +74,75 @@ async function assigntoken(user) {
 
 // ROUTE 2 : VERIFY TOKEN/EMAIL AND CREATE USER ACCOUNT
 router.post("/verifyemail/:userid/:token", async (req, res) => {
-  const user = await UserModel.findById(req.params.userid);
-  if (user) {
-    const token = await TokenModel.findOne({
-      userId: user._id,
-      token: req.params.token,
-    });
-    if (token) {
-      const newUser = await AllUsersModel.create({
-        Email: user.email,
-        UserName: user.UserName,
-        Password: user.Password,
-        isEmailVerified: true,
+  try {
+    const user = await UserModel.findById(req.params.userid);
+    if (user) {
+      const token = await TokenModel.findOne({
+        userId: user._id,
+        token: req.params.token,
       });
-      if (newUser) {
-        await UserModel.findByIdAndDelete(req.params.userid);
-        await TokenModel.findByIdAndDelete(token._id);
-        const Profile = await ProfileModel.create({
-          userId: newUser?._id,
-          Email: newUser?.Email,
+      if (token) {
+        const newUser = await AllUsersModel.create({
+          Email: user.email,
+          UserName: user.UserName,
+          Password: user.Password,
+          isEmailVerified: true,
         });
-        if (Profile) {
-          const updateUserModel = await AllUsersModel.findByIdAndUpdate(
-            Profile?.userId,
-            {
-              profileId: Profile?._id,
-            }
-          );
-          if (updateUserModel) {
-            const authtoken = jwt.sign(
+        if (newUser) {
+          await UserModel.findByIdAndDelete(req.params.userid);
+          await TokenModel.findByIdAndDelete(token._id);
+          const Profile = await ProfileModel.create({
+            userId: newUser?._id,
+            Email: newUser?.Email,
+          });
+          if (Profile) {
+            const updateUserModel = await AllUsersModel.findByIdAndUpdate(
+              Profile?.userId,
               {
-                userId: newUser.userId,
-                profileId: Profile._id,
-                email: Profile.Email,
-                ProfilePicture: Profile.ProfilePicture,
-              },
-              process.env.JWT_SECRET_KEY,
-              { expiresIn: "1d" }
+                profileId: Profile?._id,
+              }
             );
-            return res.status(200).json({
-              success: true,
-              User: updateUserModel,
-              Profile: Profile,
-              authtoken,
-              msg: " profile creaed and user model updated successfully",
-            });
-          } else {
-            res.status(400).json({
-              success: true,
-              Profile: Profile,
-              error: "profile created but user model was not updated",
-            });
+            if (updateUserModel) {
+              const authtoken = jwt.sign(
+                {
+                  userId: newUser.userId,
+                  profileId: Profile._id,
+                  email: Profile.Email,
+                  ProfilePicture: Profile.ProfilePicture,
+                },
+                process.env.JWT_SECRET_KEY,
+                { expiresIn: "1d" }
+              );
+              return res.status(200).json({
+                success: true,
+                User: updateUserModel,
+                Profile: Profile,
+                authtoken,
+                msg: " profile creaed and user model updated successfully",
+              });
+            } else {
+              res.status(400).json({
+                success: true,
+                Profile: Profile,
+                error: "profile created but user model was not updated",
+              });
+            }
           }
+        } else {
+          return res.status(400).json({
+            success: false,
+            user: false,
+            msg: "error in creating the user account",
+          });
         }
       } else {
-        return res.status(400).json({
-          success: false,
-          user: false,
-          msg: "error in creating the user account",
-        });
+        return res.status(400).json({ success: false, msg: "invalid Link" });
       }
     } else {
-      return res.status(400).json({ success: false, msg: "invalid Link" });
+      return res.status(400).json({ success: false, msg: "Invalid Link" });
     }
-  } else {
-    return res.status(400).json({ success: false, msg: "Invalid Link" });
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
