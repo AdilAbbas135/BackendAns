@@ -1,3 +1,4 @@
+const { Schema } = require("mongoose");
 const mongoose = require("mongoose");
 
 const OfferingSchema = new mongoose.Schema(
@@ -5,7 +6,7 @@ const OfferingSchema = new mongoose.Schema(
     name: { type: String },
     slug: { type: String },
     ncOfferingId: { type: String },
-    issuerId: { type: String },
+    issuerId: { type: Schema.Types.ObjectId },
     organizationId: { type: String },
     startDate: { type: Date },
     endDate: { type: Date },

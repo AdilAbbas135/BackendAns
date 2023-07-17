@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const OfferingModel = require("../Model/Offering");
+const { default: mongoose } = require("mongoose");
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "./uploads/");
@@ -51,9 +52,20 @@ router.post("/getofferings/:issuerId", async (req, res) => {
 // GET A SINGLE OFFERING
 router.get("/getsingleoffering/:id", async (req, res) => {
   try {
-    const offer = await OfferingModel.findById(req.params.id);
+    // const offer = await OfferingModel.findById(req.params.id);\
+    const offer = await OfferingModel.aggregate([
+      { $match: { _id: mongoose.Types.ObjectId(req.params.id) } },
+      {
+        $lookup: {
+          from: "profiles",
+          localField: "issuerId",
+          foreignField: "userId",
+          as: "User",
+        },
+      },
+    ]);
     if (offer) {
-      return res.status(200).json({ success: true, offer });
+      return res.status(200).json({ success: true, offer: offer[0] });
     } else {
       return res
         .status(404)

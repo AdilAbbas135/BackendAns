@@ -6,6 +6,8 @@ const stripe = require("stripe")(process.env.STRIPE_KEY);
 
 // Create Product at localhost:5000/api/buy/payment
 router.post("/payment", VerifyToken, async (req, res) => {
+  console.log("ok i am in the request");
+  console.log(req.body);
   try {
     stripe.charges.create(
       {
@@ -15,6 +17,7 @@ router.post("/payment", VerifyToken, async (req, res) => {
       },
       async (StripeErr, StripeRes) => {
         if (StripeErr) {
+          console.log(StripeErr);
           res.status(404).json(StripeErr);
         } else {
           await DonationModel.create({
@@ -28,8 +31,8 @@ router.post("/payment", VerifyToken, async (req, res) => {
       }
     );
   } catch (error) {
-    return res.status(500).json({ error: "Internal Server Error" });
     console.log(error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
